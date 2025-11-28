@@ -23,7 +23,7 @@ def main():
     parser.add_argument('--oracle-db-name', type=str, required=True, help='Oracle 데이터베이스명 (예: pg_db)')
     parser.add_argument('--table-name', type=str, required=True, help='테이블명 (예: tp_cp_master)')
     parser.add_argument('--config-dir', type=str, default='config', help='설정 파일 디렉토리 경로 (기본값: config)')
-    parser.add_argument('--common-config', type=str, default='config/common.yml', help='공통 설정 파일 경로')
+    parser.add_argument('--common-config', type=str, default='config/application.yml', help='공통 설정 파일 경로 (기본값: config/application.yml)')
     parser.add_argument('--env', type=str, default='dev', choices=['dev', 'prod'], help='환경 (dev 또는 prod, 기본값: dev)')
     args = parser.parse_args()
     

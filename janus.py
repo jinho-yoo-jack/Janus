@@ -85,8 +85,9 @@ class JanusValidator:
             # 데이터 비교
             comparison_result = self.comparator.compare(oracle_df, hive_df)
             
-            # 리포트 생성
-            report = self.report_generator.generate(comparison_result, target_date)
+            # 리포트 생성 (상세 내용 경로 포함)
+            output_path = self.validation_config.output_path if self.validation_config.output_path else None
+            report = self.report_generator.generate(comparison_result, target_date, output_path)
             logger.info("\n" + report)
             
             # 리포트 파일로 저장

@@ -1,0 +1,28 @@
+# ============================================================================
+# 공통 검증 설정
+# ============================================================================
+# 이 파일은 모든 테이블에 공통으로 적용되는 검증 설정을 포함합니다.
+# dev와 prod 환경별로 설정을 구분할 수 있습니다.
+
+dev:
+  validation:
+    # 리포트 저장 경로 (로컬 파일 시스템)
+    report_path: /opt/airflow/reports/dev
+    
+    # 차이점 레코드 저장 경로 (HDFS)
+    output_path: hdfs:///validation/differences/dev
+    
+    # 현재 날짜로부터 몇 일 전 데이터를 검증할지
+    date_offset_days: 2
+
+prod:
+  validation:
+    # 리포트 저장 경로 (로컬 파일 시스템)
+    report_path: /opt/airflow/reports/prod
+    
+    # 차이점 레코드 저장 경로 (HDFS)
+    output_path: hdfs:///validation/differences/prod
+    
+    # 현재 날짜로부터 몇 일 전 데이터를 검증할지
+    date_offset_days: 2
+

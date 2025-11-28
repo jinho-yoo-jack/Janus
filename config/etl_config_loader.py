@@ -27,9 +27,9 @@ class ETLConfigLoader:
         
         Args:
             config_dir: 설정 파일 디렉토리 경로
-            oracle_db_name: Oracle 데이터베이스명
-            table_name: 테이블명
-            common_config_path: 공통 설정 파일 경로
+            oracle_db_name: Oracle 데이터베이스명 -> config/{oracle_db_name}
+            table_name: 테이블명                -> config/{oracle_db_name}/{table_name}.yml
+            common_config_path: 공통 설정 파일 경로 (기본값: config/application.yml)
             environment: 환경명 (dev 또는 prod, 기본값: "dev")
         
         Returns:

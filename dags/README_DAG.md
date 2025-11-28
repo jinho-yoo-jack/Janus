@@ -45,7 +45,7 @@ airflow variables set oracle_jdbc_jar_path /opt/spark/jars/ojdbc8.jar
 airflow variables set validation_script_path /opt/airflow/dags/etl_runner.py
 
 # 공통 설정 파일 경로
-airflow variables set common_config_path /opt/airflow/dags/config/common.yml
+airflow variables set common_config_path /opt/airflow/dags/config/application.yml
 
 # 데이터베이스 접속 정보 파일 경로
 airflow variables set database_config_path /opt/airflow/dags/config/database.yml
@@ -56,12 +56,12 @@ airflow variables set table_config_dir /opt/airflow/dags/config/tables
 
 ### 2. 설정 파일 준비
 
-`config/common.yml.example`과 `config/tables/*.yml.example`을 참고하여 설정 파일을 생성하세요:
+`config/application.yml.example`과 `config/tables/*.yml.example`을 참고하여 설정 파일을 생성하세요:
 
 ```bash
 # 공통 설정 파일 생성
-cp config/common.yml.example config/common.yml
-# config/common.yml 편집
+cp config/application.yml.example config/application.yml
+# config/application.yml 편집
 
 # 데이터베이스 접속 정보 파일 생성
 cp config/database.yml.example config/database.yml

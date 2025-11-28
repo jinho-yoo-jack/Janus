@@ -26,34 +26,34 @@ class DatabaseConfig:
         if db_name not in config:
             raise ValueError(f"설정 파일 {config_path}에 '{db_name}' DB 접속 정보가 없습니다.")
         
-        db_data = config[db_name]
+        db_info = config[db_name]
         
         # JDBC URL 구성 (Oracle의 경우)
         if db_name == "oracle":
-            host = db_data.get("host", "")
-            port = db_data.get("port", "1521")
-            service_name = db_data.get("service_name", "")
+            host = db_info.get("host", "")
+            port = db_info.get("port", "1521")
+            service_name = db_info.get("service_name", "")
             
             if host and service_name:
                 jdbc_url = f"jdbc:oracle:thin:@{host}:{port}/{service_name}"
             else:
-                jdbc_url = db_data.get("jdbc_url", "")
+                jdbc_url = db_info.get("jdbc_url", "")
                 if not jdbc_url:
                     raise ValueError("JDBC URL이 설정되지 않았습니다.")
             
             return cls(
                 jdbc_url=jdbc_url,
-                user=db_data.get("user", ""),
-                password=db_data.get("password", ""),
-                default_schema=db_data.get("default_schema", None)
+                user=db_info.get("user", ""),
+                password=db_info.get("password", ""),
+                default_schema=db_info.get("default_schema", None)
             )
         elif db_name == "hive":
             # Hive는 Spark SQL을 통해 접근하므로 JDBC URL 불필요
             return cls(
                 jdbc_url="",  # Hive는 사용하지 않음
-                user="",  # Hive는 사용하지 않음
+                user="",      # Hive는 사용하지 않음
                 password="",  # Hive는 사용하지 않음
-                default_database=db_data.get("database", "default")
+                default_database=db_info.get("database", "default")
             )
         else:
             raise ValueError(f"지원하지 않는 데이터베이스: {db_name}")
@@ -212,32 +212,32 @@ class TableConfig:
         hive_db_config = None
         
         if "oracle" in config:
-            oracle_db_data = config["oracle"]
-            host = oracle_db_data.get("host", "")
-            port = oracle_db_data.get("port", "1521")
-            service_name = oracle_db_data.get("service_name", "")
+            oracle_db_info = config["oracle"]
+            host = oracle_db_info.get("host", "")
+            port = oracle_db_info.get("port", "1521")
+            service_name = oracle_db_info.get("service_name", "")
             
             if host and service_name:
                 jdbc_url = f"jdbc:oracle:thin:@{host}:{port}/{service_name}"
             else:
-                jdbc_url = oracle_db_data.get("jdbc_url", "")
+                jdbc_url = oracle_db_info.get("jdbc_url", "")
                 if not jdbc_url:
                     raise ValueError("Oracle JDBC URL이 설정되지 않았습니다.")
             
             oracle_db_config = DatabaseConfig(
                 jdbc_url=jdbc_url,
-                user=oracle_db_data.get("user", ""),
-                password=oracle_db_data.get("password", ""),
-                default_schema=oracle_db_data.get("default_schema", None)
+                user=oracle_db_info.get("user", ""),
+                password=oracle_db_info.get("password", ""),
+                default_schema=oracle_db_info.get("default_schema", None)
             )
         
         if "hive" in config:
-            hive_db_data = config["hive"]
+            hive_db_info = config["hive"]
             hive_db_config = DatabaseConfig(
                 jdbc_url="",
                 user="",
                 password="",
-                default_database=hive_db_data.get("database", "default")
+                default_database=hive_db_info.get("database", "default")
             )
         
         # 테이블 설정 추출

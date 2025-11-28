@@ -18,13 +18,14 @@ class ReportGenerator:
         self.oracle_config = oracle_config
         self.hive_config = hive_config
     
-    def generate(self, comparison_result: Dict[str, any], target_date: str) -> str:
+    def generate(self, comparison_result: Dict[str, any], target_date: str, output_path: str = None) -> str:
         """
         비교 결과 리포트 생성
         
         Args:
             comparison_result: 비교 결과 딕셔너리
             target_date: 대상 날짜
+            output_path: 차이점 레코드 저장 경로 (상세 내용 확인 경로 표시용)
         
         Returns:
             리포트 문자열
@@ -83,7 +84,29 @@ class ReportGenerator:
         ])
         
         if has_differences:
-            report_lines.append("⚠️  데이터 불일치가 발견되었습니다. 상세 내용을 확인하세요.")
+            report_lines.append("⚠️  데이터 불일치가 발견되었습니다.")
+            report_lines.append("")
+            report_lines.append("상세 내용 확인:")
+            if output_path:
+                table_name = self.oracle_config.table_name
+                base_path = f"{output_path}/{table_name}"
+                report_lines.append("")
+                if comparison_result['oracle_only_count'] > 0:
+                    oracle_path = f"{base_path}/oracle_only/dt={target_date}"
+                    report_lines.append(f"  • Oracle 전용 레코드: {oracle_path}")
+                if comparison_result['hive_only_count'] > 0:
+                    hive_path = f"{base_path}/hive_only/dt={target_date}"
+                    report_lines.append(f"  • Hive 전용 레코드: {hive_path}")
+                if comparison_result['total_column_differences'] > 0:
+                    diff_path = f"{base_path}/column_differences/dt={target_date}"
+                    report_lines.append(f"  • 컬럼 차이 레코드: {diff_path}")
+                report_lines.append("")
+                report_lines.append("  Parquet 파일 조회 방법:")
+                report_lines.append("    spark.read.parquet('{경로}').show()")
+                report_lines.append("    또는 HDFS에서 직접 확인: hdfs dfs -ls {경로}")
+            else:
+                report_lines.append("  차이점 레코드는 Parquet 파일로 저장되었습니다.")
+                report_lines.append("  설정 파일의 output_path 경로를 확인하세요.")
         else:
             report_lines.append("✅ 모든 데이터가 일치합니다.")
         

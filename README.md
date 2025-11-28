@@ -62,8 +62,8 @@ pytest
 
 ```bash
 # 공통 설정 파일 생성
-cp config/common.yml.example config/common.yml
-# config/common.yml 편집
+cp config/application.yml.example config/application.yml
+# config/application.yml 편집
 
 # 데이터베이스 접속 정보 파일 생성
 cp config/database.yml.example config/database.yml
@@ -76,7 +76,7 @@ cp config/tables/table_1.yml.example config/tables/table_1.yml
 
 ## 설정 파일 (YAML 형식)
 
-### 공통 설정 (config/common.yml)
+### 공통 설정 (config/application.yml)
 
 dev와 prod 환경별로 설정을 구분할 수 있습니다:
 
@@ -193,7 +193,7 @@ ETL 실행 시 다음 인자를 사용할 수 있습니다:
 | `--oracle-db-name` | ✅ | - | Oracle 데이터베이스명 (예: `pg_db`, `momopg_db`) |
 | `--table-name` | ✅ | - | 검증할 테이블명 (예: `tp_cp_master`) |
 | `--config-dir` | ❌ | `config` | 설정 파일 디렉토리 경로 |
-| `--common-config` | ❌ | `config/common.yml` | 공통 설정 파일 경로 |
+| `--common-config` | ❌ | `config/application.yml` | 공통 설정 파일 경로 |
 | `--env` | ❌ | `dev` | 환경 (dev 또는 prod) |
 
 ### 실행 방법
@@ -205,7 +205,7 @@ python -m main \
   --oracle-db-name pg_db \
   --table-name tp_cp_master \
   --config-dir config \
-  --common-config config/common.yml \
+  --common-config config/application.yml \
   --env dev
 ```
 
@@ -216,7 +216,7 @@ python main.py \
   --oracle-db-name pg_db \
   --table-name tp_cp_master \
   --config-dir config \
-  --common-config config/common.yml
+  --common-config config/application.yml
 ```
 
 #### 방법 3: Spark Submit으로 실행
@@ -229,7 +229,7 @@ spark-submit \
   --oracle-db-name pg_db \
   --table-name tp_cp_master \
   --config-dir config \
-  --common-config config/common.yml
+  --common-config config/application.yml
 ```
 
 #### 방법 4: Spark Submit (모듈 실행)
@@ -243,7 +243,7 @@ spark-submit \
   --oracle-db-name pg_db \
   --table-name tp_cp_master \
   --config-dir config \
-  --common-config config/common.yml
+  --common-config config/application.yml
 ```
 
 ### 설정 파일 구조
@@ -252,7 +252,7 @@ spark-submit \
 
 ```
 {config-dir}/
-├── common.yml                    # 공통 설정
+├── application.yml               # 공통 설정
 └── {oracle-db-name}/
     ├── database.yml              # 데이터베이스 접속 정보
     └── {table-name}.yml          # 통합 설정 파일 (선택사항)
@@ -288,7 +288,7 @@ python -m main \
   --oracle-db-name pg_db \
   --table-name tp_cp_master \
   --config-dir /path/to/custom/config \
-  --common-config /path/to/custom/config/common.yml
+  --common-config /path/to/custom/config/application.yml
 ```
 
 #### 예시 3: 여러 테이블 순차 실행
@@ -357,7 +357,24 @@ validation_report_2024-01-15.txt
 - `{output_path}/hive_only/dt={target_date}/` - Hive에만 있는 레코드
 - `{output_path}/column_differences/dt={target_date}/` - 컬럼 값이 다른 레코드
 
-## 리포트 예시
+## 리포트 및 결과물
+
+Janus는 검증 결과를 두 가지 형태로 제공합니다:
+
+1. **텍스트 리포트 파일**: 검증 결과 요약 정보
+2. **Parquet 파일**: 차이점이 발견된 실제 레코드 데이터
+
+### 리포트 파일 (텍스트)
+
+검증 결과 리포트는 텍스트 파일로 저장되며, 다음 정보를 포함합니다:
+
+- **기본 정보**: 생성 시간, 대상 날짜, 테이블 정보
+- **데이터 통계**: 레코드 수, 양쪽 존재 여부, 전용 레코드 수
+- **컬럼 정보**: 공통 컬럼, 전용 컬럼 목록
+- **컬럼별 차이점**: 각 컬럼별로 차이가 있는 레코드 수
+- **검증 결과**: 최종 일치/불일치 상태
+
+#### 리포트 예시
 
 ```
 ================================================================================
@@ -366,38 +383,236 @@ Oracle vs Hive 테이블 데이터 비교 리포트
 생성 시간: 2024-01-17 10:30:00
 대상 날짜: 2024-01-15
 
-Oracle 테이블: SCHEMA.TABLE_NAME
-Hive 테이블: default.hive_table_name
+Oracle 테이블: SCHEMA.TP_CP_MASTER
+Hive 테이블: default.tp_cp_master
 
 --------------------------------------------------------------------------------
 데이터 통계
 --------------------------------------------------------------------------------
 Oracle 레코드 수: 10,000
-Hive 레코드 수: 10,000
-양쪽 모두 존재: 9,950
-Oracle에만 존재: 50
-Hive에만 존재: 0
+Hive 레코드 수: 9,950
+양쪽 모두 존재: 9,900
+Oracle에만 존재: 100
+Hive에만 존재: 50
 
 --------------------------------------------------------------------------------
 컬럼 정보
 --------------------------------------------------------------------------------
 공통 컬럼 수: 15
-Oracle 전용 컬럼: []
-Hive 전용 컬럼: []
+Oracle 전용 컬럼: ['oracle_metadata']
+Hive 전용 컬럼: ['hive_partition_date']
 
 --------------------------------------------------------------------------------
 컬럼별 차이점
 --------------------------------------------------------------------------------
-  column_name: 10개 레코드 차이
+  customer_name: 25개 레코드 차이
+  amount: 12개 레코드 차이
+  status: 8개 레코드 차이
 
 --------------------------------------------------------------------------------
 검증 결과
 --------------------------------------------------------------------------------
 상태: ❌ 차이점 발견
 
-⚠️  데이터 불일치가 발견되었습니다. 상세 내용을 확인하세요.
+⚠️  데이터 불일치가 발견되었습니다.
+
+상세 내용 확인:
+
+  • Oracle 전용 레코드: hdfs://kcp-hadoop-cluster/validation/differences/dev/TP_CP_MASTER/oracle_only/dt=2024-01-15
+  • Hive 전용 레코드: hdfs://kcp-hadoop-cluster/validation/differences/dev/TP_CP_MASTER/hive_only/dt=2024-01-15
+  • 컬럼 차이 레코드: hdfs://kcp-hadoop-cluster/validation/differences/dev/TP_CP_MASTER/column_differences/dt=2024-01-15
+
+  Parquet 파일 조회 방법:
+    spark.read.parquet('{경로}').show()
+    또는 HDFS에서 직접 확인: hdfs dfs -ls {경로}
 ================================================================================
 ```
+
+**리포트 파일 경로**: `{report_path}/validation_report_{table_name}_{date}.txt`
+
+예시: `/opt/airflow/reports/dev/validation_report_TP_CP_MASTER_2024-01-15.txt`
+
+**중요**: 리포트 파일에는 요약 정보만 포함되며, **상세 레코드 데이터는 리포트 하단에 표시된 HDFS 경로의 Parquet 파일에서 확인**할 수 있습니다.
+
+### 차이점 레코드 (Parquet 파일)
+
+차이점이 발견된 경우, 상세 레코드 데이터가 Parquet 형식으로 HDFS에 저장됩니다:
+
+#### 저장 경로 구조
+
+```
+{output_path}/{table_name}/
+├── oracle_only/
+│   └── dt=2024-01-15/
+│       └── part-00000-xxx.parquet  # Oracle에만 있는 레코드
+├── hive_only/
+│   └── dt=2024-01-15/
+│       └── part-00000-xxx.parquet  # Hive에만 있는 레코드
+└── column_differences/
+    └── dt=2024-01-15/
+        └── part-00000-xxx.parquet  # 양쪽에 있지만 값이 다른 레코드
+```
+
+예시: `hdfs://kcp-hadoop-cluster/validation/differences/dev/TP_CP_MASTER/oracle_only/dt=2024-01-15/`
+
+#### Parquet 파일 내용
+
+각 Parquet 파일에는 다음 정보가 포함됩니다:
+
+1. **oracle_only**: Oracle에만 존재하는 레코드
+   - 모든 컬럼 데이터 포함
+   - Primary Key로 식별 가능
+
+2. **hive_only**: Hive에만 존재하는 레코드
+   - 모든 컬럼 데이터 포함
+   - Primary Key로 식별 가능
+
+3. **column_differences**: 양쪽에 존재하지만 값이 다른 레코드
+   - Oracle과 Hive의 모든 컬럼 포함 (접두사: `oracle.`, `hive.`)
+   - 어떤 컬럼에서 차이가 있는지 확인 가능
+
+#### Parquet 파일 조회 예시
+
+```python
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName("ReadDifference").getOrCreate()
+
+# Oracle 전용 레코드 읽기
+oracle_only = spark.read.parquet(
+    "hdfs://kcp-hadoop-cluster/validation/differences/dev/TP_CP_MASTER/oracle_only/dt=2024-01-15"
+)
+
+# Hive 전용 레코드 읽기
+hive_only = spark.read.parquet(
+    "hdfs://kcp-hadoop-cluster/validation/differences/dev/TP_CP_MASTER/hive_only/dt=2024-01-15"
+)
+
+# 컬럼 차이 레코드 읽기
+column_diff = spark.read.parquet(
+    "hdfs://kcp-hadoop-cluster/validation/differences/dev/TP_CP_MASTER/column_differences/dt=2024-01-15"
+)
+
+# Oracle과 Hive 값 비교
+column_diff.select(
+    "oracle.customer_id",
+    "oracle.customer_name as oracle_name",
+    "hive.customer_name as hive_name",
+    "oracle.amount as oracle_amount",
+    "hive.amount as hive_amount"
+).show()
+```
+
+#### 결과 해석 가이드
+
+1. **oracle_only 레코드가 있는 경우**
+   - Oracle에는 있지만 Hive로 전송되지 않은 데이터
+   - ETL 프로세스 확인 필요
+
+2. **hive_only 레코드가 있는 경우**
+   - Hive에는 있지만 Oracle에 없는 데이터
+   - 데이터 소스 또는 ETL 로직 확인 필요
+
+3. **column_differences 레코드가 있는 경우**
+   - 양쪽에 존재하지만 특정 컬럼 값이 다른 데이터
+   - 데이터 변환 로직 또는 타임스탬프 차이 확인 필요
+
+### 상세 내용 확인 방법
+
+리포트에서 "⚠️  데이터 불일치가 발견되었습니다." 메시지가 표시되면, 리포트 하단에 **상세 레코드 저장 경로**가 자동으로 표시됩니다.
+
+#### 1단계: 리포트 파일 확인 (요약 정보)
+
+```bash
+# 리포트 파일 확인
+cat /opt/airflow/reports/dev/validation_report_TP_CP_MASTER_2024-01-15.txt
+```
+
+리포트 하단에 다음과 같은 경로가 표시됩니다:
+```
+상세 내용 확인:
+
+  • Oracle 전용 레코드: hdfs://.../oracle_only/dt=2024-01-15
+  • Hive 전용 레코드: hdfs://.../hive_only/dt=2024-01-15
+  • 컬럼 차이 레코드: hdfs://.../column_differences/dt=2024-01-15
+```
+
+#### 2단계: 상세 레코드 확인 (Parquet 파일)
+
+리포트에 표시된 경로의 Parquet 파일에서 실제 차이점 레코드를 확인할 수 있습니다.
+
+**방법 1: Spark/PySpark로 조회**
+
+```python
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName("CheckDifferences").getOrCreate()
+
+# Oracle 전용 레코드 확인
+oracle_only = spark.read.parquet(
+    "hdfs://kcp-hadoop-cluster/validation/differences/dev/TP_CP_MASTER/oracle_only/dt=2024-01-15"
+)
+oracle_only.show(100)  # 상위 100개 레코드 확인
+
+# 컬럼 차이 레코드 확인 (Oracle과 Hive 값 비교)
+column_diff = spark.read.parquet(
+    "hdfs://kcp-hadoop-cluster/validation/differences/dev/TP_CP_MASTER/column_differences/dt=2024-01-15"
+)
+# Oracle과 Hive 값 비교
+column_diff.select(
+    "oracle.customer_id",
+    "oracle.customer_name as oracle_name",
+    "hive.customer_name as hive_name",
+    "oracle.amount as oracle_amount",
+    "hive.amount as hive_amount"
+).show(100)
+```
+
+**방법 2: Spark SQL로 조회**
+
+```bash
+spark-sql --master yarn <<EOF
+-- Oracle 전용 레코드 확인
+SELECT * FROM parquet.`hdfs://kcp-hadoop-cluster/validation/differences/dev/TP_CP_MASTER/oracle_only/dt=2024-01-15`
+LIMIT 100;
+
+-- 컬럼 차이 레코드 확인
+SELECT 
+  oracle.customer_id,
+  oracle.customer_name as oracle_name,
+  hive.customer_name as hive_name,
+  oracle.amount as oracle_amount,
+  hive.amount as hive_amount
+FROM parquet.`hdfs://kcp-hadoop-cluster/validation/differences/dev/TP_CP_MASTER/column_differences/dt=2024-01-15`
+LIMIT 100;
+EOF
+```
+
+**방법 3: HDFS 명령어로 파일 확인**
+
+```bash
+# 파일 목록 확인
+hdfs dfs -ls hdfs://kcp-hadoop-cluster/validation/differences/dev/TP_CP_MASTER/oracle_only/dt=2024-01-15
+
+# 파일 크기 확인
+hdfs dfs -du -h hdfs://kcp-hadoop-cluster/validation/differences/dev/TP_CP_MASTER/oracle_only/dt=2024-01-15
+```
+
+#### 3단계: Airflow 로그 확인
+
+Airflow UI에서 각 Task의 로그를 확인하여 실행 과정과 상세 경로를 확인할 수 있습니다:
+
+1. Airflow UI → DAG → Task 선택
+2. "Log" 버튼 클릭
+3. 로그에서 리포트 내용과 저장 경로 확인
+
+### 결과 확인 요약
+
+| 확인 항목 | 위치 | 내용 |
+|----------|------|------|
+| **요약 정보** | 리포트 파일 (`{report_path}/validation_report_*.txt`) | 통계, 컬럼 정보, 차이점 개수 |
+| **상세 레코드** | Parquet 파일 (HDFS 경로) | 실제 차이점이 있는 레코드 데이터 |
+| **실행 로그** | Airflow UI 로그 | 실행 과정 및 상세 경로 |
 
 ## 종료 코드
 
@@ -421,7 +636,7 @@ dags/janus_validation_dag.py
 ```bash
 airflow variables set oracle_jdbc_jar_path /opt/spark/jars/ojdbc8.jar
 airflow variables set validation_script_path /opt/airflow/dags/main.py
-airflow variables set common_config_path /opt/airflow/dags/config/common.yml
+airflow variables set common_config_path /opt/airflow/dags/config/application.yml
 airflow variables set database_config_path /opt/airflow/dags/config/database.yml
 airflow variables set table_config_dir /opt/airflow/dags/config/tables
 ```
@@ -430,8 +645,8 @@ airflow variables set table_config_dir /opt/airflow/dags/config/tables
 
 ```bash
 # 공통 설정 파일 생성
-cp config/common.yml.example config/common.yml
-# config/common.yml 편집
+cp config/application.yml.example config/application.yml
+# config/application.yml 편집
 
 # 데이터베이스 접속 정보 파일 생성
 cp config/database.yml.example config/database.yml

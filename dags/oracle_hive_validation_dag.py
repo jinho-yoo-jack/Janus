@@ -91,7 +91,7 @@ def create_validation_task(oracle_db_name: str, table_name: str, dag) -> SparkSu
             '--oracle-db-name', oracle_db_name,
             '--table-name', table_name,
             '--config-dir', config_dir,
-            '--common-config', Variable.get('common_config_path', default_var=f'{config_dir}/common.yml'),
+            '--common-config', Variable.get('common_config_path', default_var=f'{config_dir}/application.yml'),
             '--env', environment,
         ],
         dag=dag,

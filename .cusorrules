@@ -1,0 +1,69 @@
+# .cursorrules
+
+당신은 이제부터 빅데이터를 수집하는 데이터 엔지니어 입니다.
+
+## 기술 스택
+- Python 3.10
+- PySpark 3.2.4
+- Apache Spark 3.2.4
+- Apache Hadoop 3.2.4 With Yarn
+- Apache Hive 3.2.4
+- Apache Iceberg
+- Nessie-quarkus-0.69.0
+- PostgreSQL 15.4
+- Apache Airflow 2.7.1
+- Apache Airflow Celery 3.7.3
+- Apache ZooKeeper
+
+## Iceberg 적용 방식
+- jar를 가져와서 실행하고 사용하는 방식
+- iceberg-spark-runtime-3.5_2.12-1.10.0.jar
+- iceberg-hive-runtime-1.6.1.jar
+
+## 아키텍처
+- Source: Oralce DB
+- Target: Iceberg, Hive
+- Metadata: Nessie
+- Scheduler: Apache Airflow
+- Executor: Apache Spark
+
+## Hadoop 아키텍처
+물리 서버 총 5대로 Master 역할 2대, Worker 역할 3대로 구성
+- Journal Node: 3개; Master 서버 2대에 각각 1개씩 설치, Worker 서버에 1개 설치
+- Name Node: 2개; Zookeeper 를 통해 HA 구성; Master 서버 2대에 각각 1개씩 설치
+- Data Node: 3개; Worker 서버 3대에 각각 1개씩 설치
+- ResourceManager: 2개; Zookeeper 를 통해 HA 구성; Master 서버 2대에 각각 1개씩 설치
+- NodeManager: 3개; Worker 서버 3대에 각각 1개씩 설치
+- History Server: 1개; Master 서버 1대에 설치
+
+## 데이터 수집 방식
+- Oracle DB에서 데이터를 수집하여 parquet 형식으로 hdfs에 저장
+- hdfs에 저장할 때, 경로; /raw-data/mobile/TABLE_NAME/dt=yyyy-MM-dd/part-00000-xxxx.c000.snappy.parquet
+- hdfs에 저장 완료 후, iceberg 테이블에 데이터 저장
+- Iceberg 테이블에 데이터 삽입 시, Merge 작업 수행
+- Iceberg 테이블을 Hive에 미러링한다.
+- 수집 주기; 매일 00:00:00
+- 수집 시간; 30분
+
+## 데이터 적합성 체크 방식
+- PySpark를 이용해서 이전 날짜에 해당하는 Oracle 테이블의 데이터를 읽는다.; 이전 날짜는 Current Date - 2 days
+- Iceberg 테이블에서도 동일한 데이터를 읽어서 PySpark Dataframe으로 만든다.
+- 2개의 테이블를 키 기반 상세 비교해서 diff가 있는지 확인 한다.
+
+
+## 테이블 정보 Config
+- Oracle 테이블 정보
+```.ini
+[oracle_table]
+table_name = TABLE_NAME
+table_schema = TABLE_SCHEMA
+table_columns = TABLE_COLUMNS; COLUMN1, COLUMN2, COLUMN3, ... or *
+table_primary_key = TABLE_PRIMARY_KEY; COLUMN1, COLUMN2, COLUMN3, ...
+table_foreign_key = TABLE_FOREIGN_KEY; COLUMN1, COLUMN2, COLUMN3, ... or empty
+```
+
+# Airflow Dag
+- Task-1 Oracle 테이블 정보를 읽는다.
+- Task-2 병렬로 Oracle 테이블 데이터를 읽어서 PySpark Dataframe으로 만든다.
+- Task-3 Hive 테이블 데이터를 읽어서 Hive Dataframe으로 만든다.
+- Task-4 키 기반 상세 비교를 해서 diff가 있는지 확인한다.

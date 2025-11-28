@@ -1,0 +1,236 @@
+# ============================================================================
+# Oracle vs Hive 테이블 데이터 검증 설정 파일
+# ============================================================================
+# 각 테이블별로 oracle_table_{table_name}, hive_table_{table_name} 섹션을 생성합니다.
+# 예: table_1의 경우 oracle_table_table_1, hive_table_table_1
+
+# ============================================================================
+# 공통 검증 설정
+# ============================================================================
+[validation]
+report_path = /opt/airflow/reports  # 리포트 저장 경로 (로컬 파일 시스템)
+output_path = hdfs:///validation/differences  # 차이점 레코드 저장 경로 (HDFS)
+date_offset_days = 2  # 현재 날짜로부터 몇 일 전 데이터를 검증할지
+
+# ============================================================================
+# 날짜 컬럼 타입 설명
+# ============================================================================
+# date_column_type은 Oracle과 Hive 테이블의 날짜 컬럼 데이터 형식을 지정합니다.
+# 지원하는 형식:
+#   - yyyy-mm-dd: 예) 2024-01-15
+#   - yyyymmdd: 예) 20240115
+#   - yyyymmdd HH24:mm:ss: 예) 20240115 14:30:00
+# 
+# 각 테이블별로 Oracle과 Hive의 날짜 형식이 다를 수 있으므로
+# oracle_table_{table_name}과 hive_table_{table_name} 섹션에 각각 설정합니다.
+
+# ============================================================================
+# 테이블 1 설정
+# ============================================================================
+[oracle_table_table_1]
+# JDBC 연결 정보 (방법 1: 개별 설정)
+host = oracle.example.com
+port = 1521
+service_name = ORCL
+
+# 또는 JDBC URL 직접 설정 (방법 2)
+# jdbc_url = jdbc:oracle:thin:@oracle.example.com:1521/ORCL
+
+user = oracle_user
+password = oracle_password
+table_schema = SCHEMA_NAME
+table_name = TABLE_1
+table_columns = *  # 또는 COLUMN1, COLUMN2, COLUMN3, ...
+table_primary_key = COLUMN1, COLUMN2  # 복합 키 가능
+date_column = CREATED_DATE  # 날짜 필터링에 사용할 컬럼명
+date_column_type = yyyy-mm-dd  # 날짜 컬럼 데이터 타입: yyyy-mm-dd, yyyymmdd, yyyymmdd HH24:mm:ss
+
+[hive_table_table_1]
+database = default
+table_name = hive_table_1
+date_column = dt  # 파티션 컬럼명 (일반적으로 dt)
+date_column_type = yyyy-mm-dd  # 날짜 컬럼 데이터 타입: yyyy-mm-dd, yyyymmdd, yyyymmdd HH24:mm:ss (기본값: yyyy-mm-dd)
+
+# ============================================================================
+# 테이블 2 설정 (yyyymmdd 형식 예시)
+# ============================================================================
+[oracle_table_table_2]
+host = oracle.example.com
+port = 1521
+service_name = ORCL
+user = oracle_user
+password = oracle_password
+table_schema = SCHEMA_NAME
+table_name = TABLE_2
+table_columns = *
+table_primary_key = ID
+date_column = CREATED_DATE
+date_column_type = yyyymmdd  # 예: 20240115
+
+[hive_table_table_2]
+database = default
+table_name = hive_table_2
+date_column = dt
+date_column_type = yyyymmdd  # 예: 20240115
+
+# ============================================================================
+# 테이블 3 설정
+# ============================================================================
+[oracle_table_table_3]
+host = oracle.example.com
+port = 1521
+service_name = ORCL
+user = oracle_user
+password = oracle_password
+table_schema = SCHEMA_NAME
+table_name = TABLE_3
+table_columns = *
+table_primary_key = ID
+date_column = CREATED_DATE
+date_column_type = yyyymmdd HH24:mm:ss  # 예: 20240115 14:30:00
+
+[hive_table_table_3]
+database = default
+table_name = hive_table_3
+date_column = dt
+date_column_type = yyyymmdd HH24:mm:ss  # 예: 20240115 14:30:00
+
+# ============================================================================
+# 테이블 4 설정
+# ============================================================================
+[oracle_table_table_4]
+host = oracle.example.com
+port = 1521
+service_name = ORCL
+user = oracle_user
+password = oracle_password
+table_schema = SCHEMA_NAME
+table_name = TABLE_4
+table_columns = *
+table_primary_key = ID
+date_column = CREATED_DATE
+
+[hive_table_table_4]
+database = default
+table_name = hive_table_4
+date_column = dt
+
+# ============================================================================
+# 테이블 5 설정
+# ============================================================================
+[oracle_table_table_5]
+host = oracle.example.com
+port = 1521
+service_name = ORCL
+user = oracle_user
+password = oracle_password
+table_schema = SCHEMA_NAME
+table_name = TABLE_5
+table_columns = *
+table_primary_key = ID
+date_column = CREATED_DATE
+
+[hive_table_table_5]
+database = default
+table_name = hive_table_5
+date_column = dt
+
+# ============================================================================
+# 테이블 6 설정
+# ============================================================================
+[oracle_table_table_6]
+host = oracle.example.com
+port = 1521
+service_name = ORCL
+user = oracle_user
+password = oracle_password
+table_schema = SCHEMA_NAME
+table_name = TABLE_6
+table_columns = *
+table_primary_key = ID
+date_column = CREATED_DATE
+
+[hive_table_table_6]
+database = default
+table_name = hive_table_6
+date_column = dt
+
+# ============================================================================
+# 테이블 7 설정
+# ============================================================================
+[oracle_table_table_7]
+host = oracle.example.com
+port = 1521
+service_name = ORCL
+user = oracle_user
+password = oracle_password
+table_schema = SCHEMA_NAME
+table_name = TABLE_7
+table_columns = *
+table_primary_key = ID
+date_column = CREATED_DATE
+
+[hive_table_table_7]
+database = default
+table_name = hive_table_7
+date_column = dt
+
+# ============================================================================
+# 테이블 8 설정
+# ============================================================================
+[oracle_table_table_8]
+host = oracle.example.com
+port = 1521
+service_name = ORCL
+user = oracle_user
+password = oracle_password
+table_schema = SCHEMA_NAME
+table_name = TABLE_8
+table_columns = *
+table_primary_key = ID
+date_column = CREATED_DATE
+
+[hive_table_table_8]
+database = default
+table_name = hive_table_8
+date_column = dt
+
+# ============================================================================
+# 테이블 9 설정
+# ============================================================================
+[oracle_table_table_9]
+host = oracle.example.com
+port = 1521
+service_name = ORCL
+user = oracle_user
+password = oracle_password
+table_schema = SCHEMA_NAME
+table_name = TABLE_9
+table_columns = *
+table_primary_key = ID
+date_column = CREATED_DATE
+
+[hive_table_table_9]
+database = default
+table_name = hive_table_9
+date_column = dt
+
+# ============================================================================
+# 테이블 10 설정
+# ============================================================================
+[oracle_table_table_10]
+host = oracle.example.com
+port = 1521
+service_name = ORCL
+user = oracle_user
+password = oracle_password
+table_schema = SCHEMA_NAME
+table_name = TABLE_10
+table_columns = *
+table_primary_key = ID
+date_column = CREATED_DATE
+
+[hive_table_table_10]
+database = default
+table_name = hive_table_10
+date_column = dt

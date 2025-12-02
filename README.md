@@ -624,22 +624,129 @@ Airflow UI에서 각 Task의 로그를 확인하여 실행 과정과 상세 경�
 ### DAG 파일 위치
 
 ```
-dags/janus_validation_dag.py
+dags/oracle_hive_validation_dag.py
 ```
 
-**참고**: DAG 파일명은 `oracle_hive_validation_dag.py`로 유지되지만, DAG ID는 `janus_validation`으로 변경되었습니다.
+**참고**: DAG ID는 `janus_validation`입니다.
+
+### Apache Livy 사용
+
+이 DAG는 **Apache Livy**를 사용하여 Spark 세션을 관리합니다. Livy는 REST API를 통해 Spark 작업을 실행하는 서버입니다.
+
+#### Livy 서버 요구사항
+
+- Livy 서버가 실행 중이어야 합니다 (기본 포트: 18998)
+- Livy 서버 URL: `http://localhost:18998`
+
+#### Livy 세션 관리
+
+이 DAG는 **공유 Livy 세션** 방식을 사용합니다:
+- 하나의 Livy 세션을 생성하여 모든 검증 작업에서 공유
+- 세션 ID는 XCom을 통해 각 Task에 전달
+- 모든 검증 작업 완료 후 세션 삭제
+- 세션 생성 및 관리는 `utils/livy_session.py`의 `LivySessionManager` 클래스가 담당합니다
+
+### DAG 실행 흐름
+
+DAG는 다음 순서로 실행됩니다:
+
+```
+start
+  ↓
+create_livy_session (Livy 세션 생성)
+  ↓
+table_validation_group (병렬 실행, 공유 세션 사용)
+  ├── validate_pg_db_tp_cp_master
+  ├── validate_table_2
+  ├── validate_table_3
+  └── ... (추가 테이블)
+  ↓
+summarize_results (결과 요약)
+  ↓
+generate_final_report (최종 리포트 생성)
+  ↓
+delete_livy_session (Livy 세션 삭제)
+  ↓
+end
+```
+
+#### 단계별 설명
+
+1. **create_livy_session**
+   - Livy 서버에 Spark 세션을 생성합니다
+   - 세션 ID를 XCom에 저장하여 후속 Task에서 사용할 수 있도록 합니다
+   - 세션이 준비될 때까지 대기합니다 (기본 타임아웃: 300초)
+
+2. **table_validation_group** (병렬 실행)
+   - 여러 테이블을 동시에 검증합니다
+   - 각 검증 Task는 공유 Livy 세션을 사용합니다
+   - XCom에서 세션 ID를 가져와서 사용합니다
+   - `dags/livy_shared_session.py`의 `execute_validation_with_shared_livy_session` 함수가 실행됩니다
+
+3. **summarize_results**
+   - 모든 검증 결과를 종합하여 요약합니다
+   - 성공/실패 테이블 수를 집계합니다
+   - 결과를 XCom에 저장합니다
+
+4. **generate_final_report**
+   - 검증 결과를 종합하여 최종 리포트를 생성합니다
+   - 리포트 파일을 지정된 경로에 저장합니다 (Airflow Variable `report_path` 설정 필요)
+
+5. **delete_livy_session**
+   - 모든 작업 완료 후 Livy 세션을 삭제합니다
+   - `trigger_rule='all_done'`으로 설정되어 있어 성공/실패 관계없이 실행됩니다
+
+#### 공유 세션의 장점
+
+- **리소스 효율성**: 하나의 Spark 세션을 재사용하여 세션 생성 오버헤드 감소
+- **세션 관리 명확화**: 세션 생성/삭제를 명확히 분리하여 관리 용이
+- **결과 추적**: 각 검증 결과를 XCom으로 전달하여 리포팅에 활용
 
 ### 설정
 
-1. **Airflow Variables 설정**:
+1. **Apache Livy 서버 확인**:
 
 ```bash
-airflow variables set oracle_jdbc_jar_path /opt/spark/jars/ojdbc8.jar
-airflow variables set validation_script_path /opt/airflow/dags/main.py
-airflow variables set common_config_path /opt/airflow/dags/config/application.yml
-airflow variables set database_config_path /opt/airflow/dags/config/database.yml
-airflow variables set table_config_dir /opt/airflow/dags/config/tables
+# Livy 서버 상태 확인
+curl http://localhost:18998/sessions
 ```
+
+2. **Airflow Variables 설정**:
+
+```bash
+# Livy 서버 URL (필수)
+airflow variables set livy_url http://localhost:18998
+
+# Oracle JDBC Driver 경로
+airflow variables set oracle_jdbc_jar_path /opt/spark/jars/ojdbc8.jar
+
+# 프로젝트 경로 (Janus 코드가 있는 경로)
+airflow variables set project_path /opt/airflow/dags
+
+# 설정 파일 디렉토리 경로
+airflow variables set config_dir /opt/airflow/dags/config
+
+# 공통 설정 파일 경로
+airflow variables set common_config_path /opt/airflow/dags/config/application.yml
+
+# 환경 설정 (dev 또는 prod)
+airflow variables set environment dev
+
+# 리포트 저장 경로 (선택사항, generate_final_report Task에서 사용)
+airflow variables set report_path /opt/airflow/reports
+```
+
+#### Airflow Variables 설명
+
+| Variable | 필수 | 기본값 | 설명 |
+|----------|------|--------|------|
+| `livy_url` | ✅ | `http://localhost:18998` | Livy 서버 URL |
+| `oracle_jdbc_jar_path` | ❌ | `/opt/spark/jars/ojdbc8.jar` | Oracle JDBC Driver JAR 파일 경로 |
+| `project_path` | ❌ | `/opt/airflow/dags` | Janus 프로젝트 코드 경로 |
+| `config_dir` | ❌ | `/opt/airflow/dags/config` | 설정 파일 디렉토리 경로 |
+| `common_config_path` | ❌ | `/opt/airflow/dags/config/application.yml` | 공통 설정 파일 경로 |
+| `environment` | ❌ | `dev` | 환경 설정 (dev 또는 prod) |
+| `report_path` | ❌ | `/opt/airflow/reports` | 최종 리포트 저장 경로 |
 
 2. **설정 파일 준비**:
 
@@ -659,20 +766,47 @@ cp config/tables/table_1.yml.example config/tables/table_1.yml
 
 3. **테이블 목록 수정**:
 
-`dags/oracle_hive_validation_dag.py` (또는 `dags/janus_validation_dag.py`)의 `TABLE_LIST`를 수정:
+`dags/oracle_hive_validation_dag.py`의 `TABLE_LIST`를 수정:
 
 ```python
 TABLE_LIST = [
-    'table_1',
-    'table_2',
-    # ... 10개 테이블
+    ('pg_db', 'tp_cp_master'),  # (oracle_db_name, table_name) 튜플
+    ('pg_db', 'table_2'),
+    ('momopg_db', 'table_3'),
+    # ... 추가 테이블
 ]
 ```
 
+**참고**: 각 튜플은 `(oracle_db_name, table_name)` 형식입니다. 설정 파일 경로는 자동으로 `config/{oracle_db_name}/{table_name}.yml`로 구성됩니다.
+
 ### 실행
 
-- **스케줄**: 매일 00:00 자동 실행
+- **스케줄**: 매일 00:00 자동 실행 (`schedule_interval='0 0 * * *'`)
 - **수동 실행**: Airflow UI에서 "Trigger DAG" 클릭
+- **최대 동시 실행**: 1개 (`max_active_runs=1`)
+
+### 실행 모니터링
+
+#### Airflow UI에서 확인
+
+1. **DAG 실행 상태**: Airflow UI → DAGs → `janus_validation` → 실행 상태 확인
+2. **Task별 로그**: 각 Task를 클릭하여 상세 로그 확인
+3. **XCom 데이터**: Task 간 전달되는 데이터 (세션 ID, 검증 결과 등) 확인
+
+#### 주요 확인 포인트
+
+- **create_livy_session**: 세션 ID가 정상적으로 생성되었는지 확인
+- **table_validation_group**: 각 테이블 검증이 성공적으로 완료되었는지 확인
+- **summarize_results**: 검증 결과 요약이 정상적으로 생성되었는지 확인
+- **generate_final_report**: 최종 리포트 파일이 생성되었는지 확인
+- **delete_livy_session**: 세션이 정상적으로 삭제되었는지 확인
+
+#### 로그에서 확인할 수 있는 정보
+
+- Livy 세션 생성/삭제 상태
+- 각 테이블 검증 결과 (성공/실패)
+- 검증 결과 요약 (성공/실패 테이블 수)
+- 최종 리포트 저장 경로
 
 자세한 내용은 `dags/README_DAG.md`를 참고하세요.
 

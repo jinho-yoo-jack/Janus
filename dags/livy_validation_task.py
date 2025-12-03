@@ -29,7 +29,7 @@ def execute_validation_with_livy(
         실행 결과
     """
     # 설정 파일 경로
-    config_dir = Variable.get('config_dir', default_var='/opt/airflow/dags/config')
+    config_dir = Variable.get('config_dir', default_var='/opt/airflow/dags/cfg')
     environment = Variable.get('environment', default_var='dev')
     common_config = Variable.get('common_config_path', default_var=f'{config_dir}/application.yml')
     oracle_jdbc_jar = Variable.get('oracle_jdbc_jar_path', default_var='/opt/spark/jars/ojdbc8.jar')
@@ -69,7 +69,7 @@ import os
 sys.path.insert(0, '{project_path}')
 
 # Janus 검증 실행
-from config.etl_config_loader import ETLConfigLoader
+from cfg.etl_config_loader import ETLConfigLoader
 from utils import setup_logging
 from janus import JanusValidator
 

@@ -69,10 +69,10 @@ airflow variables set oracle_jdbc_jar_path /opt/spark/jars/ojdbc8.jar
 airflow variables set project_path /opt/airflow/dags
 
 # 설정 파일 디렉토리 경로
-airflow variables set config_dir /opt/airflow/dags/config
+airflow variables set config_dir /opt/airflow/dags/cfg
 
 # 공통 설정 파일 경로
-airflow variables set common_config_path /opt/airflow/dags/config/application.yml
+airflow variables set common_config_path /opt/airflow/dags/cfg/application.yml
 
 # 환경 설정 (dev 또는 prod)
 airflow variables set environment dev
@@ -80,20 +80,21 @@ airflow variables set environment dev
 
 ### 3. 설정 파일 준비
 
-`config/application.yml.example`과 `config/tables/*.yml.example`을 참고하여 설정 파일을 생성하세요:
+`cfg/application.yml.example`과 `cfg/{db_name}/tables/*.yml.example`을 참고하여 설정 파일을 생성하세요:
 
 ```bash
 # 공통 설정 파일 생성
-cp config/application.yml.example config/application.yml
-# config/application.yml 편집
+cp cfg/application.yml.example cfg/application.yml
+# cfg/application.yml 편집
 
-# 데이터베이스 접속 정보 파일 생성
-cp config/database.yml.example config/database.yml
-# config/database.yml 편집
+# 데이터베이스별 디렉토리 및 설정 파일 생성
+# 예: pg_db 데이터베이스의 경우
+mkdir -p cfg/pg_db/tables
+cp cfg/pg_db/database.yml.example cfg/pg_db/database.yml
+# cfg/pg_db/database.yml 편집
 
-# 테이블별 설정 파일 생성
-cp config/tables/table_1.yml.example config/tables/table_1.yml
-# config/tables/table_1.yml 편집
+cp cfg/pg_db/tables/tp_cp_master.yml.example cfg/pg_db/tables/tp_cp_master.yml
+# cfg/pg_db/tables/tp_cp_master.yml 편집
 ```
 
 각 테이블마다 하나의 YAML 파일이 필요하며, 다음 필드를 포함합니다:
@@ -104,6 +105,8 @@ cp config/tables/table_1.yml.example config/tables/table_1.yml
 - `date_column_type`: 날짜 컬럼 데이터 타입
 - `primary_keys`: Primary Key 리스트
 - `exclude_columns`: 비교 대상에서 제외할 컬럼 리스트 (선택사항)
+- `oracle_where_clause`: Oracle 추가 WHERE 조건문 (선택사항)
+- `hive_where_clause`: Hive 추가 WHERE 조건문 (선택사항)
 
 ### 4. 테이블 목록 수정
 
@@ -111,11 +114,13 @@ cp config/tables/table_1.yml.example config/tables/table_1.yml
 
 ```python
 TABLE_LIST = [
-    'table_1',
-    'table_2',
+    ('pg_db', 'tp_cp_master'),  # (oracle_db_name, table_name) 튜플
+    ('momopg_db', 'tp_cp_master'),
     # ... 추가 테이블
 ]
 ```
+
+**참고**: 각 튜플은 `(oracle_db_name, table_name)` 형식입니다. 설정 파일 경로는 자동으로 `config/{oracle_db_name}/tables/{table_name}.yml`로 구성됩니다.
 
 ### 5. Spark Pool 설정 (선택사항)
 
@@ -196,9 +201,9 @@ airflow dags trigger janus_validation
    - 코드 실행 오류 메시지
 
 3. **설정 확인**: 설정 파일의 해당 테이블 설정 확인
-   - `config/{oracle_db_name}/{table_name}.yml`
-   - `config/{oracle_db_name}/database.yml`
-   - `config/application.yml`
+   - `cfg/{oracle_db_name}/tables/{table_name}.yml`
+   - `cfg/{oracle_db_name}/database.yml`
+   - `cfg/application.yml`
 
 4. **연결 확인**: Oracle 및 Hive 연결 정보 확인
 
@@ -227,7 +232,7 @@ default_args = {
 
 ### 테이블 추가
 
-1. `config/{oracle_db_name}/{table_name}.yml` 설정 파일 생성
+1. `cfg/{oracle_db_name}/tables/{table_name}.yml` 설정 파일 생성
 2. `TABLE_LIST`에 `(oracle_db_name, table_name)` 튜플 추가
 3. DAG 자동으로 새 테이블 검증 Task 생성
 

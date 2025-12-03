@@ -57,6 +57,7 @@ def create_livy_session(**context):
     oracle_jdbc_jar = Variable.get('oracle_jdbc_jar_path', default_var='/opt/spark/jars/ojdbc8.jar')
     livy_url = Variable.get('livy_url', default_var='http://localhost:18998')
     project_path = Variable.get('project_path', default_var='/opt/airflow/dags')
+    config_dir = Variable.get('config_dir', default_var='/opt/airflow/dags/cfg')
     
     livy_manager = LivySessionManager(livy_url=livy_url)
     

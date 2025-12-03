@@ -65,18 +65,19 @@ pytest
 cp config/application.yml.example config/application.yml
 # config/application.yml 편집
 
-# 데이터베이스 접속 정보 파일 생성
-cp config/database.yml.example config/database.yml
-# config/database.yml 편집
+# 데이터베이스별 디렉토리 및 설정 파일 생성
+# 예: pg_db 데이터베이스의 경우
+mkdir -p config/pg_db/tables
+cp config/pg_db/database.yml.example config/pg_db/database.yml
+# config/pg_db/database.yml 편집
 
-# 테이블별 설정 파일 생성
-cp config/tables/table_1.yml.example config/tables/table_1.yml
-# config/tables/table_1.yml 편집
+cp config/pg_db/tables/tp_cp_master.yml.example config/pg_db/tables/tp_cp_master.yml
+# config/pg_db/tables/tp_cp_master.yml 편집
 ```
 
 ## 설정 파일 (YAML 형식)
 
-### 공통 설정 (config/application.yml)
+### 공통 설정 (cfg/application.yml)
 
 dev와 prod 환경별로 설정을 구분할 수 있습니다:
 
@@ -96,7 +97,7 @@ prod:
 
 **참고**: 기존 구조(`validation:` 섹션만 있는 경우)도 하위 호환성을 위해 지원됩니다.
 
-### 데이터베이스 접속 정보 (config/database.yml)
+### 데이터베이스 접속 정보 (cfg/{db_name}/database.yml)
 
 모든 데이터베이스 접속 정보를 한 곳에서 관리:
 
@@ -113,9 +114,23 @@ hive:
   database: default
 ```
 
-### 테이블별 설정 (config/tables/{table_name}.yml)
+### 테이블별 설정 (cfg/{db_name}/tables/{table_name}.yml)
 
-각 테이블마다 하나의 설정 파일을 생성합니다:
+각 테이블마다 하나의 설정 파일을 생성합니다. 설정 파일은 데이터베이스별 디렉토리 구조를 따릅니다:
+
+```
+config/
+├── pg_db/
+│   ├── database.yml
+│   └── tables/
+│       └── tp_cp_master.yml
+└── momopg_db/
+    ├── database.yml
+    └── tables/
+        └── tp_cp_master.yml
+```
+
+테이블 설정 파일 예시:
 
 ```yaml
 # 소스 데이터베이스명 (database.yml에 정의된 DB 접속 정보 참조)
@@ -125,7 +140,7 @@ source_db_name: oracle
 target_db_name: hive
 
 # 테이블명
-table_name: TABLE_1
+table_name: TP_CP_MASTER
 
 # 날짜 컬럼명
 date_column: CREATED_DATE
@@ -133,11 +148,11 @@ date_column: CREATED_DATE
 # 날짜 컬럼 데이터 타입: yyyy-mm-dd, yyyymmdd, yyyymmdd HH24:mm:ss, yyyy-mm-dd HH24:mm:ss
 date_column_type: yyyy-mm-dd
 
-# 비교 대상에서 제외할 컬럼 (선택사항)
-exclude_columns: ["UPDATED_DATE", "VERSION"]
-
 # Primary Key (복합 키 가능)
 primary_keys: ["COLUMN1", "COLUMN2"]
+
+# 비교 대상에서 제외할 컬럼 (선택사항)
+exclude_columns: ["UPDATED_DATE", "VERSION"]
 
 # 읽을 컬럼 (선택사항, 기본값: "*")
 # columns: "*"  # 또는 ["COLUMN1", "COLUMN2", "COLUMN3", ...]
@@ -147,6 +162,14 @@ primary_keys: ["COLUMN1", "COLUMN2"]
 
 # Hive 테이블 데이터베이스 (선택사항, database.yml의 database 사용 시 생략 가능)
 # hive_database: default
+
+# Oracle WHERE 조건문 (선택사항, 날짜 조건과 AND로 결합됨)
+# 예시: "STATUS = 'ACTIVE' AND REGION = 'KR'"
+# oracle_where_clause: "STATUS = 'ACTIVE' AND REGION = 'KR'"
+
+# Hive WHERE 조건문 (선택사항, 날짜 조건과 AND로 결합됨)
+# 예시: "status = 'active' AND region = 'kr'"
+# hive_where_clause: "status = 'active' AND region = 'kr'"
 ```
 
 ### 제외 컬럼 (exclude_columns)
@@ -192,8 +215,8 @@ ETL 실행 시 다음 인자를 사용할 수 있습니다:
 |------|------|--------|------|
 | `--oracle-db-name` | ✅ | - | Oracle 데이터베이스명 (예: `pg_db`, `momopg_db`) |
 | `--table-name` | ✅ | - | 검증할 테이블명 (예: `tp_cp_master`) |
-| `--config-dir` | ❌ | `config` | 설정 파일 디렉토리 경로 |
-| `--common-config` | ❌ | `config/application.yml` | 공통 설정 파일 경로 |
+| `--config-dir` | ❌ | `cfg` | 설정 파일 디렉토리 경로 |
+| `--common-config` | ❌ | `cfg/application.yml` | 공통 설정 파일 경로 |
 | `--env` | ❌ | `dev` | 환경 (dev 또는 prod) |
 
 ### 실행 방법
@@ -204,8 +227,8 @@ ETL 실행 시 다음 인자를 사용할 수 있습니다:
 python -m main \
   --oracle-db-name pg_db \
   --table-name tp_cp_master \
-  --config-dir config \
-  --common-config config/application.yml \
+  --config-dir cfg \
+  --common-config cfg/application.yml \
   --env dev
 ```
 
@@ -215,8 +238,8 @@ python -m main \
 python main.py \
   --oracle-db-name pg_db \
   --table-name tp_cp_master \
-  --config-dir config \
-  --common-config config/application.yml
+  --config-dir cfg \
+  --common-config cfg/application.yml
 ```
 
 #### 방법 3: Spark Submit으로 실행
@@ -228,8 +251,8 @@ spark-submit \
   main.py \
   --oracle-db-name pg_db \
   --table-name tp_cp_master \
-  --config-dir config \
-  --common-config config/application.yml
+  --config-dir cfg \
+  --common-config cfg/application.yml
 ```
 
 #### 방법 4: Spark Submit (모듈 실행)
@@ -242,8 +265,8 @@ spark-submit \
   -m main \
   --oracle-db-name pg_db \
   --table-name tp_cp_master \
-  --config-dir config \
-  --common-config config/application.yml
+  --config-dir cfg \
+  --common-config cfg/application.yml
 ```
 
 ### 설정 파일 구조
@@ -255,12 +278,11 @@ spark-submit \
 ├── application.yml               # 공통 설정
 └── {oracle-db-name}/
     ├── database.yml              # 데이터베이스 접속 정보
-    └── {table-name}.yml          # 통합 설정 파일 (선택사항)
     └── tables/
-        └── {table-name}.yml       # 테이블별 설정 파일 (선택사항)
+        └── {table-name}.yml      # 테이블별 설정 파일
 ```
 
-**참고**: 통합 설정 파일(`{oracle-db-name}/{table-name}.yml`)과 분리된 설정 파일(`{oracle-db-name}/tables/{table-name}.yml`) 중 하나만 있으면 됩니다.
+**참고**: 설정 파일 경로는 `cfg/{oracle-db-name}/tables/{table-name}.yml` 형식을 따릅니다.
 
 ### 실행 예시
 
@@ -287,8 +309,8 @@ python -m main \
 python -m main \
   --oracle-db-name pg_db \
   --table-name tp_cp_master \
-  --config-dir /path/to/custom/config \
-  --common-config /path/to/custom/config/application.yml
+  --config-dir /path/to/custom/cfg \
+  --common-config /path/to/custom/cfg/application.yml
 ```
 
 #### 예시 3: 여러 테이블 순차 실행
@@ -743,8 +765,8 @@ airflow variables set report_path /opt/airflow/reports
 | `livy_url` | ✅ | `http://localhost:18998` | Livy 서버 URL |
 | `oracle_jdbc_jar_path` | ❌ | `/opt/spark/jars/ojdbc8.jar` | Oracle JDBC Driver JAR 파일 경로 |
 | `project_path` | ❌ | `/opt/airflow/dags` | Janus 프로젝트 코드 경로 |
-| `config_dir` | ❌ | `/opt/airflow/dags/config` | 설정 파일 디렉토리 경로 |
-| `common_config_path` | ❌ | `/opt/airflow/dags/config/application.yml` | 공통 설정 파일 경로 |
+| `config_dir` | ❌ | `/opt/airflow/dags/cfg` | 설정 파일 디렉토리 경로 |
+| `common_config_path` | ❌ | `/opt/airflow/dags/cfg/application.yml` | 공통 설정 파일 경로 |
 | `environment` | ❌ | `dev` | 환경 설정 (dev 또는 prod) |
 | `report_path` | ❌ | `/opt/airflow/reports` | 최종 리포트 저장 경로 |
 
@@ -755,13 +777,14 @@ airflow variables set report_path /opt/airflow/reports
 cp config/application.yml.example config/application.yml
 # config/application.yml 편집
 
-# 데이터베이스 접속 정보 파일 생성
-cp config/database.yml.example config/database.yml
-# config/database.yml 편집
+# 데이터베이스별 디렉토리 및 설정 파일 생성
+# 예: pg_db 데이터베이스의 경우
+mkdir -p config/pg_db/tables
+cp config/pg_db/database.yml.example config/pg_db/database.yml
+# config/pg_db/database.yml 편집
 
-# 테이블별 설정 파일 생성
-cp config/tables/table_1.yml.example config/tables/table_1.yml
-# config/tables/table_1.yml 편집
+cp config/pg_db/tables/tp_cp_master.yml.example config/pg_db/tables/tp_cp_master.yml
+# config/pg_db/tables/tp_cp_master.yml 편집
 ```
 
 3. **테이블 목록 수정**:
@@ -777,7 +800,7 @@ TABLE_LIST = [
 ]
 ```
 
-**참고**: 각 튜플은 `(oracle_db_name, table_name)` 형식입니다. 설정 파일 경로는 자동으로 `config/{oracle_db_name}/{table_name}.yml`로 구성됩니다.
+**참고**: 각 튜플은 `(oracle_db_name, table_name)` 형식입니다. 설정 파일 경로는 자동으로 `cfg/{oracle_db_name}/tables/{table_name}.yml`로 구성됩니다.
 
 ### 실행
 

@@ -147,9 +147,9 @@ checkpoint-*/
 # 설정 파일 (실제 설정 파일은 제외, .example만 포함)
 config/*.yml
 !config/*.yml.example
-!config/application.yml.example
-config/**/database.yml
-!config/**/database.yml.example
+!cfg/application.yml.example
+cfg/**/database.yml
+!cfg/**/database.yml.example
 config/**/tables/*.yml
 !config/**/tables/*.yml.example
 

@@ -38,7 +38,7 @@ def run_validation(
     try:
         # pyFiles로 업로드된 모듈들을 import
         # ZIP 파일로 업로드된 경우, 패키지 구조가 유지되어 있음
-        from config.etl_config_loader import ETLConfigLoader
+        from cfg.etl_config_loader import ETLConfigLoader
         from utils import setup_logging
         from janus import JanusValidator
         

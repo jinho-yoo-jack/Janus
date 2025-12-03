@@ -51,12 +51,20 @@ class HiveReader:
         # SELECT 절 구성 (제외 컬럼 처리)
         select_clause = self._build_select_clause()
         
-        # Hive 테이블 읽기 (범위 조건: date_column >= target_date AND date_column < next_date)
+        # 날짜 조건 구성
+        date_where_clause = f"{self.config.date_column} >= '{hive_date_value}' AND {self.config.date_column} < '{next_date_value}'"
+        
+        # 추가 WHERE 조건문이 있으면 AND로 결합
+        if self.config.where_clause:
+            where_clause = f"({date_where_clause} AND {self.config.where_clause})"
+        else:
+            where_clause = date_where_clause
+        
+        # Hive 테이블 읽기
         df = self.spark.sql(f"""
             SELECT {select_clause}
             FROM {full_table_name}
-            WHERE {self.config.date_column} >= '{hive_date_value}'
-            AND {self.config.date_column} < '{next_date_value}'
+            WHERE {where_clause}
         """)
         
         # 제외할 컬럼이 있으면 DataFrame에서 제외

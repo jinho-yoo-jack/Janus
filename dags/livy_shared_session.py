@@ -31,7 +31,7 @@ def execute_validation_with_shared_livy_session(
         실행 결과
     """
     # 설정 파일 경로
-    config_dir = Variable.get('config_dir', default_var='/opt/airflow/dags/config')
+    config_dir = Variable.get('config_dir', default_var='/opt/airflow/dags/cfg')
     environment = Variable.get('environment', default_var='dev')
     common_config = Variable.get('common_config_path', default_var=f'{config_dir}/application.yml')
     project_path = Variable.get('project_path', default_var='/opt/airflow/dags')

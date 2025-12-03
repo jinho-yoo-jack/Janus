@@ -50,7 +50,13 @@ class OracleReader:
         select_columns = self._build_select_columns()
 
         # 날짜 형식에 따라 target_date 변환 및 Oracle WHERE 절 생성
-        where_clause = self._build_where_clause(target_date)
+        date_where_clause = self._build_where_clause(target_date)
+        
+        # 추가 WHERE 조건문이 있으면 AND로 결합
+        if self.config.where_clause:
+            where_clause = f"({date_where_clause} AND {self.config.where_clause})"
+        else:
+            where_clause = date_where_clause
 
         # 서브쿼리로 날짜 필터링 (서버 측에서 필터링하여 효율적)
         query = f"""
@@ -190,7 +196,7 @@ class OracleReader:
         """
         if self.config.columns == ["*"]:
             # 모든 컬럼을 선택하되, 제외할 컬럼이 있으면 제외
-            # if self.config.exclude_columns:
+            # if self.cfg.exclude_columns:
             # 제외할 컬럼 목록을 생성하기 위해 먼저 모든 컬럼을 읽어야 함
             # 하지만 Oracle에서는 이를 직접 할 수 없으므로,
             # 제외할 컬럼을 명시적으로 빼는 방식으로 처리

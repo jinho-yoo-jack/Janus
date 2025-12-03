@@ -33,7 +33,7 @@ pyspark-for-perfect/
 │   ├── logger.py            # 로깅 유틸리티
 │   └── spark_session.py     # Spark 세션 유틸리티
 │
-├── config/                   # 설정 관련 모듈
+├── cfg/                   # 설정 관련 모듈
 │   ├── etl_config_loader.py # ETL 설정 로드
 │   └── ...
 │
@@ -116,7 +116,7 @@ pyspark-for-perfect/
 - `__main__.py`: main 함수 (명령줄 인자 파싱, Spark 세션 생성, ETL 실행)
 - `python -m main` 또는 `python main.py`로 실행 가능
 
-### 8. config/etl_config_loader.py - ETL 설정 로드
+### 8. cfg/etl_config_loader.py - ETL 설정 로드
 
 **역할**: ETL 실행에 필요한 설정 파일 로드
 
@@ -134,7 +134,7 @@ pyspark-for-perfect/
 
 ```
 main/__main__.py
-    ├── config/etl_config_loader.py (ETLConfigLoader)
+    ├── cfg/etl_config_loader.py (ETLConfigLoader)
     │   └── config.py
     └── janus.py (JanusValidator)
         ├── utils/

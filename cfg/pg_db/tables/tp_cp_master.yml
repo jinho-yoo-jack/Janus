@@ -1,0 +1,20 @@
+# ============================================================================
+# 테이블 1 설정
+# ============================================================================
+# 이 파일은 table_1에 대한 Oracle과 Hive 테이블 설정을 포함합니다.
+
+oracle_table:
+  table_name: TABLE_1
+  table_columns: "*"  # 또는 ["COLUMN1", "COLUMN2", "COLUMN3", ...]
+  table_primary_key: ["COLUMN1", "COLUMN2"]  # 복합 키 가능
+  date_column: CREATED_DATE  # 날짜 필터링에 사용할 컬럼명
+  date_column_type: yyyy-mm-dd  # 날짜 컬럼 데이터 타입: yyyy-mm-dd, yyyymmdd, yyyymmdd HH24:mm:ss, yyyy-mm-dd HH24:mm:ss
+  exclude_columns: ["UPDATED_DATE", "VERSION"]  # 비교 대상에서 제외할 컬럼 (선택사항)
+
+hive_table:
+  database: default
+  table_name: hive_table_1
+  date_column: dt  # 파티션 컬럼명 (일반적으로 dt)
+  date_column_type: yyyy-mm-dd  # 날짜 컬럼 데이터 타입: yyyy-mm-dd, yyyymmdd, yyyymmdd HH24:mm:ss, yyyy-mm-dd HH24:mm:ss (기본값: yyyy-mm-dd)
+  exclude_columns: ["updated_date", "version"]  # 비교 대상에서 제외할 컬럼 (선택사항)
+

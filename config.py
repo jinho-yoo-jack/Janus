@@ -64,7 +64,8 @@ class TableConfig:
     """테이블별 검증 설정"""
     source_db_name: str
     target_db_name: str
-    table_name: str
+    table_name: str  # Oracle 테이블명
+    hive_table_name: str  # Hive 테이블명 (선택사항, 없으면 table_name 사용)
     date_column: str
     date_column_type: str
     exclude_columns: List[str]
@@ -72,6 +73,8 @@ class TableConfig:
     columns: List[str] = None  # 선택사항, 기본값: ["*"]
     oracle_schema: Optional[str] = None  # 선택사항
     hive_database: Optional[str] = None  # 선택사항
+    oracle_where_clause: Optional[str] = None  # Oracle WHERE 조건문 (선택사항, 날짜 조건과 AND로 결합)
+    hive_where_clause: Optional[str] = None  # Hive WHERE 조건문 (선택사항, 날짜 조건과 AND로 결합)
     
     @classmethod
     def from_yaml(cls, config_path: str) -> "TableConfig":
@@ -131,13 +134,16 @@ class TableConfig:
                 source_db_name="oracle",
                 target_db_name="hive",
                 table_name=oracle_table.get("table_name", ""),
+                hive_table_name=hive_table.get("table_name", ""),  # Hive 테이블명
                 date_column=oracle_table.get("date_column", "CREATED_DATE"),
                 date_column_type=date_column_type,
                 exclude_columns=exclude_columns,
                 primary_keys=primary_keys,
                 columns=columns,
                 oracle_schema=None,  # database.yml에서 가져옴
-                hive_database=hive_table.get("database", None)
+                hive_database=hive_table.get("database", None),
+                oracle_where_clause=oracle_table.get("where_clause", None),
+                hive_where_clause=hive_table.get("where_clause", None)
             )
         else:
             # 새로운 구조: source_db_name, target_db_name 등으로 구성
@@ -198,7 +204,9 @@ class TableConfig:
                 primary_keys=primary_keys,
                 columns=columns,
                 oracle_schema=config.get("oracle_schema", None),
-                hive_database=config.get("hive_database", None)
+                hive_database=config.get("hive_database", None),
+                oracle_where_clause=config.get("oracle_where_clause", None),
+                hive_where_clause=config.get("hive_where_clause", None)
             )
     
     @classmethod
@@ -259,6 +267,7 @@ class OracleConfig:
     date_column: str
     date_column_type: str
     exclude_columns: List[str]
+    where_clause: Optional[str] = None
     
     @classmethod
     def from_table_and_database_config(
@@ -277,7 +286,8 @@ class OracleConfig:
             primary_keys=table_config.primary_keys,
             date_column=table_config.date_column,
             date_column_type=table_config.date_column_type,
-            exclude_columns=table_config.exclude_columns
+            exclude_columns=table_config.exclude_columns,
+            where_clause=table_config.oracle_where_clause
         )
 
 
@@ -289,6 +299,7 @@ class HiveConfig:
     date_column: str
     date_column_type: str
     exclude_columns: List[str]
+    where_clause: Optional[str] = None
     
     @classmethod
     def from_table_and_database_config(
@@ -297,12 +308,16 @@ class HiveConfig:
         database_config: DatabaseConfig
     ) -> "HiveConfig":
         """TableConfig와 DatabaseConfig로부터 HiveConfig 생성"""
+        # Hive 테이블명: hive_table_name이 있으면 사용, 없으면 table_name 사용
+        hive_table_name = table_config.hive_table_name or table_config.table_name
+        
         return cls(
             database=table_config.hive_database or database_config.default_database or "default",
-            table_name=table_config.table_name,
+            table_name=hive_table_name,
             date_column=table_config.date_column,
             date_column_type=table_config.date_column_type,
-            exclude_columns=table_config.exclude_columns
+            exclude_columns=table_config.exclude_columns,
+            where_clause=table_config.hive_where_clause
         )
 
 

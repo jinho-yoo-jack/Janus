@@ -9,7 +9,7 @@ import sys
 import argparse
 from pyspark.sql import SparkSession
 
-from config.etl_config_loader import ETLConfigLoader
+from cfg.etl_config_loader import ETLConfigLoader
 from utils import setup_logging, create_spark_session
 from janus import JanusValidator
 
@@ -22,8 +22,8 @@ def main():
     parser = argparse.ArgumentParser(description='Janus - Datawarehouse와 RDB 간 데이터 정합성 검증')
     parser.add_argument('--oracle-db-name', type=str, required=True, help='Oracle 데이터베이스명 (예: pg_db)')
     parser.add_argument('--table-name', type=str, required=True, help='테이블명 (예: tp_cp_master)')
-    parser.add_argument('--cfg-dir', type=str, default='cfg', help='설정 파일 디렉토리 경로 (기본값: cfg)')
-    parser.add_argument('--common-cfg', type=str, default='cfg/application.yml', help='공통 설정 파일 경로 (기본값: cfg/application.yml)')
+    parser.add_argument('--config-dir', type=str, default='cfg', help='설정 파일 디렉토리 경로 (기본값: cfg)')
+    parser.add_argument('--common-config', type=str, default='cfg/application.yml', help='공통 설정 파일 경로 (기본값: cfg/application.yml)')
     parser.add_argument('--env', type=str, default='dev', choices=['dev', 'prod'], help='환경 (dev 또는 prod, 기본값: dev)')
     args = parser.parse_args()
     

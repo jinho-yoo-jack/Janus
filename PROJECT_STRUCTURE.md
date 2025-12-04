@@ -33,9 +33,13 @@ pyspark-for-perfect/
 │   ├── logger.py            # 로깅 유틸리티
 │   └── spark_session.py     # Spark 세션 유틸리티
 │
-├── cfg/                   # 설정 관련 모듈
+├── cfg/                      # 설정 파일 디렉토리
 │   ├── etl_config_loader.py # ETL 설정 로드
-│   └── ...
+│   ├── application.yml      # 공통 설정
+│   └── {db_name}/           # 데이터베이스별 설정
+│       ├── database.yml
+│       └── tables/
+│           └── {table_name}.yml
 │
 ├── main/                     # ETL 실행 진입점 패키지
 │   ├── __init__.py

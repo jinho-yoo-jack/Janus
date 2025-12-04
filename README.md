@@ -15,7 +15,8 @@ Janus는 Oracle 테이블과 Hive 테이블의 데이터를 키 기반으로 상
 - **reporting/**: 리포트 생성 모듈 (리포트 생성, 차이점 저장)
 - **utils/**: 유틸리티 모듈 (로깅, Spark 세션)
 - **config.py**: 설정 관리
-- **config/etl_config_loader.py**: ETL 설정 로드
+- **cfg/**: 설정 파일 디렉토리
+- **cfg/etl_config_loader.py**: ETL 설정 로드
 - **janus.py**: Janus 검증 클래스 (검증 로직)
 - **main/**: ETL 실행 진입점 패키지 (main 함수만 포함)
 
@@ -194,7 +195,7 @@ exclude_columns: ["UPDATED_DATE", "VERSION"]
 
 각 테이블별로 Oracle과 Hive의 날짜 형식이 다를 수 있으므로, 테이블 설정 파일에 각각 설정합니다.
 
-자세한 내용은 [config/README.md](config/README.md)를 참고하세요.
+자세한 내용은 [cfg/README.md](cfg/README.md)를 참고하세요.
 
 ### 검증 설정
 
@@ -313,18 +314,57 @@ python -m main \
   --common-config /path/to/custom/cfg/application.yml
 ```
 
-#### 예시 3: 여러 테이블 순차 실행
+#### 예시 3: 여러 테이블 한번에 실행
+
+여러 테이블을 한번에 실행하는 방법:
+
+**방법 1: 순차 실행 (하나씩 순서대로)**
 
 ```bash
-# 테이블 1
-python -m main --oracle-db-name pg_db --table-name table_1
-
-# 테이블 2
-python -m main --oracle-db-name pg_db --table-name table_2
-
-# 테이블 3
-python -m main --oracle-db-name pg_db --table-name table_3
+python run_multiple_tables.py \
+  --tables "pg_db:tp_cp_master,pg_db:table_2,momopg_db:table_3" \
+  --mode sequential \
+  --config-dir cfg \
+  --common-config cfg/application.yml \
+  --env dev
 ```
+
+**방법 2: 병렬 실행 (여러 개 동시 실행)**
+
+```bash
+python run_multiple_tables.py \
+  --tables "pg_db:tp_cp_master,pg_db:table_2,momopg_db:table_3" \
+  --mode parallel \
+  --max-workers 3 \
+  --config-dir cfg \
+  --common-config cfg/application.yml \
+  --env dev
+```
+
+**방법 3: 파일에서 테이블 목록 읽기**
+
+테이블 목록 파일 생성 (`tables.txt`):
+```
+pg_db:tp_cp_master
+pg_db:table_2
+momopg_db:table_3
+```
+
+실행:
+```bash
+python run_multiple_tables.py \
+  --table-list-file tables.txt \
+  --mode parallel \
+  --max-workers 3 \
+  --config-dir cfg \
+  --common-config cfg/application.yml \
+  --env dev
+```
+
+**참고**: 
+- `--mode sequential`: 테이블을 하나씩 순차적으로 실행 (안정적, 느림)
+- `--mode parallel`: 여러 테이블을 동시에 실행 (빠름, 리소스 사용 많음)
+- `--max-workers`: 병렬 실행 시 최대 동시 실행 수 (기본값: 3)
 
 ### Airflow DAG에서 사용
 

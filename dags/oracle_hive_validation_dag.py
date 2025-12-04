@@ -31,7 +31,7 @@ default_args = {
 }
 
 # 검증할 테이블 목록: (oracle_db_name, table_name) 튜플 리스트
-# 설정 파일 경로는 자동으로 config/{oracle_db_name}/{table_name}.yml로 구성됨
+# 설정 파일 경로는 자동으로 cfg/{oracle_db_name}/tables/{table_name}.yml로 구성됨
 TABLE_LIST = [
     ('pg_db', 'tp_cp_master'),
     # 추가 테이블을 여기에 추가: (oracle_db_name, table_name)
@@ -103,7 +103,7 @@ def create_livy_session(**context):
                     'utils/__init__.py',
                     'utils/logger.py',
                     'utils/spark_session.py',
-                    'config/etl_config_loader.py',
+                    'cfg/etl_config_loader.py',
                     'dags/janus_validation_module.py',
                 ]
                 
